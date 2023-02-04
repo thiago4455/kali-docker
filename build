@@ -1,0 +1,4 @@
+#!/bin/bash
+
+docker build . -t 0xb074/kali
+docker run --rm -ti -v kali:/work 0xb074/kali
