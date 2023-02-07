@@ -14,6 +14,7 @@ ENV PATH="$GOPATH/bin:$GOROOT/bin:$HOME/.local/bin:$PATH"
 RUN go install -v github.com/OWASP/Amass/v3/...@master
 COPY configs/amass.ini "$HOME/.config/amass/config.ini"
 RUN GO111MODULE=on go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder...@master
+COPY configs/subfinder_provider_config.yaml "$HOME/.config/subfinder/provider-config.yaml"
 RUN go install github.com/tomnomnom/assetfinder/...@master
 RUN go install -v github.com/tomnomnom/waybackurls/...@master
 RUN go install github.com/lc/gau/v2/cmd/gau@latest
