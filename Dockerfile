@@ -24,7 +24,7 @@ RUN go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
 #tomnomnom Tools
 RUN go install github.com/tomnomnom/assetfinder/...@master
 RUN go install github.com/tomnomnom/waybackurls/...@master
-RUN go install github.com/tomnomnom/httprobe@latest
+RUN go install github.com/tomnomnom/httprobe@master
 RUN go install github.com/tomnomnom/meg@latest
 RUN go install github.com/tomnomnom/hacks/html-tool@latest
 RUN go install github.com/tomnomnom/unfurl@latest
@@ -32,7 +32,8 @@ RUN go install github.com/tomnomnom/gron@latest
 RUN go install github.com/tomnomnom/anew@latest
 RUN go install github.com/tomnomnom/gf@latest
 RUN go install github.com/tomnomnom/hacks/html-tool@latest
-RUN go install github.com/tomnomnom/comb
+RUN go install github.com/tomnomnom/comb@latest
+RUN go install github.com/tomnomnom/fff@latest
 RUN cp -r $GOPATH/pkg/mod/github.com/tomnomnom/gf@*/examples ~/.gf
 RUN echo 'source $GOPATH/pkg/mod/github.com/tomnomnom/gf@*/gf-completion.bash' >> ~/.bashrc
 
@@ -48,6 +49,12 @@ RUN apt -y install python3 python3-pip
 RUN pip3 install dnsgen
 RUN mkdir -p /usr/share/xsstrike && git clone https://github.com/s0md3v/XSStrike /usr/share/xsstrike
 RUN chmod +x /usr/share/xsstrike/xsstrike.py && ln -s /usr/share/xsstrike/xsstrike.py /usr/bin/xsstrike
+
+RUN curl --request GET \
+  --url 'https://www.tenable.com/downloads/api/v2/pages/nessus/files/Nessus-10.7.0-ubuntu1804_aarch64.deb' \
+  --output '/tmp/Nessus-10.7.0-ubuntu1804_aarch64.deb'
+RUN apt -y install /tmp/Nessus-10.7.0-ubuntu1804_aarch64.deb
+RUN echo "alias nessus=\"/etc/init.d/nessusd start\"" >> ~/.bashrc
 
 RUN apt -y install gospider sqlmap
 
