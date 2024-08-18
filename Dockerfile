@@ -2,7 +2,7 @@ FROM kalilinux/kali-rolling:arm64
 SHELL ["/bin/bash", "-c"]
 
 RUN apt-get update && apt -y install ca-certificates
-RUN apt-get update && apt -y install wget iputils-ping git vim nano curl nmap openvpn cmake bat
+RUN apt-get update && apt -y install wget iputils-ping git vim nano curl nmap openvpn cmake bat gnupg gpg
 
 WORKDIR /tmp
 RUN wget https://go.dev/dl/go1.22.0.linux-arm64.tar.gz
@@ -46,20 +46,51 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 RUN apt -y install enum4linux
 
 RUN apt -y install python3 python3-pip
-RUN pip3 install dnsgen
+RUN pip3 install dnsgen uddup
 RUN mkdir -p /usr/share/xsstrike && git clone https://github.com/s0md3v/XSStrike /usr/share/xsstrike
 RUN chmod +x /usr/share/xsstrike/xsstrike.py && ln -s /usr/share/xsstrike/xsstrike.py /usr/bin/xsstrike
 
 RUN curl --request GET \
-  --url 'https://www.tenable.com/downloads/api/v2/pages/nessus/files/Nessus-10.7.0-ubuntu1804_aarch64.deb' \
-  --output '/tmp/Nessus-10.7.0-ubuntu1804_aarch64.deb'
-RUN apt -y install /tmp/Nessus-10.7.0-ubuntu1804_aarch64.deb
+  --url 'https://www.tenable.com/downloads/api/v2/pages/nessus/files/Nessus-10.8.1-ubuntu1804_aarch64.deb' \
+  --output 'Nessus-10.8.1-ubuntu1804_aarch64.deb'
+
+RUN apt -y install /tmp/Nessus-10.8.1-ubuntu1804_aarch64.deb
 RUN echo "alias nessus=\"/etc/init.d/nessusd start\"" >> ~/.bashrc
 
-RUN apt -y install gospider sqlmap
+
+RUN git clone https://github.com/ameenmaali/urldedupe.git
+RUN cd urldedupe && cmake CMakeLists.txt && make && mv urldedupe /usr/bin/urldedupe
+
+RUN cd /tmp && wget http://www.inet.no/dante/files/dante-1.4.3.tar.gz && tar -xvzf dante-1.4.3.tar.gz
+RUN cd dante-1.4.3 && ./configure --build=aarch64-unknown-linux-gnu && make && make install
+COPY configs/sockd.conf /etc/sockd.conf
+
+RUN apt -y install gospider sqlmap jq
+RUN echo "alias urlencode=\"jq -sRr @uri\"" >> ~/.bashrc
+
+RUN apt -y install chromium feh iproute2 netcat-traditional
+
+RUN git clone --depth 1 https://github.com/junegunn/fzf.git /usr/share/fzf && . /usr/share/fzf/install
+RUN wget https://raw.githubusercontent.com/lincheney/fzf-tab-completion/master/bash/fzf-bash-completion.sh -O /usr/share/fzf/fzf-bash-completion.sh
+
+RUN wget https://github.com/kovidgoyal/kitty/releases/download/v0.35.2/kitten-linux-arm64 -O /usr/bin/kitten && chmod +x /usr/bin/kitten
+
+RUN wget https://raw.github.com/xwmx/nb/master/nb -O /usr/local/bin/nb && chmod +x /usr/local/bin/nb && nb completions install
 
 RUN echo "printf '\eP\$f{\"hook\": \"SourcedRcFileForWarp\", \"value\": { \"shell\": \"bash\" }}\x9c'" >> /root/.bashrc
 
+RUN wget https://github.com/PowerShell/PowerShell/releases/download/v7.4.4/powershell-7.4.4-linux-arm64.tar.gz && \
+  mkdir -p /opt/microsoft/powershell/7 && \
+  tar zxf /tmp/powershell-7.4.4-linux-arm64.tar.gz -C /opt/microsoft/powershell/7 && \
+  chmod +x /opt/microsoft/powershell/7/pwsh && \
+  ln -s /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh
+
 WORKDIR /work
 ENV HISTFILE=/work/.bash_history
+RUN echo "export HISTSIZE=" >> ~/.bashrc
+RUN echo "export HISTFILESIZE=" >> ~/.bashrc
+RUN echo "export HISTCONTROL=ignoredups" >> ~/.bashrc
+RUN echo "shopt -s histverify" >> ~/.bashrc
+RUN echo "source /usr/share/fzf/fzf-bash-completion.sh && bind -x '"'"\t"'": fzf_bash_completion'" >> ~/.bashrc
+#RUN echo 'eval "$(fzf --bash)"' >> ~/.bashrc
 ENV TERM=xterm-256color
