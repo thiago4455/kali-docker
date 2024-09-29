@@ -2,10 +2,10 @@ FROM kalilinux/kali-rolling:arm64
 SHELL ["/bin/bash", "-c"]
 
 RUN apt-get update && apt -y install ca-certificates
-RUN apt-get update && apt -y install wget iputils-ping git vim nano curl nmap openvpn cmake bat gnupg gpg xclip python3 python3-pip iproute2 netcat-traditional
-RUN apt -y install rdesktop nbtscan enum4linux gospider sqlmap jq chromium feh
+RUN apt-get update && apt -y install wget iputils-ping git vim nano curl nmap openvpn cmake bat gnupg gpg xclip python3 python3-pip iproute2 netcat-traditional fzf
+RUN apt -y install rdesktop nbtscan enum4linux gospider sqlmap jq chromium feh metasploit-framework
 
-RUN pip3 install dnsgen uddup
+RUN pip3 install dnsgen uddup --break-system-packages
 
 WORKDIR /tmp
 
@@ -14,8 +14,8 @@ RUN wget https://go.dev/dl/go1.22.0.linux-arm64.tar.gz
 RUN tar -C /usr/local -xzf go1.22.0.linux-arm64.tar.gz
 RUN cp /usr/local/go/bin/go /usr/bin
 ENV GOROOT="/usr/local/go"
-ENV GOPATH="$HOME/go"
-ENV PATH="$GOPATH/bin:$GOROOT/bin:$HOME/.local/bin:$PATH"
+ENV GOPATH="/etc/go"
+ENV PATH="$GOPATH/bin:$GOROOT/bin:$PATH"
 
 RUN go install -v github.com/owasp-amass/amass/v4/...@master
 COPY configs/amass.ini "$HOME/.config/amass/config.ini"
@@ -49,9 +49,9 @@ RUN echo 'source $GOPATH/pkg/mod/github.com/tomnomnom/gf@*/gf-completion.bash' >
 
 ## NESSUS
 RUN curl --request GET \
-  --url 'https://www.tenable.com/downloads/api/v2/pages/nessus/files/Nessus-10.8.2-ubuntu1804_aarch64.deb' \
-  --output 'Nessus-10.8.2-ubuntu1804_aarch64.deb'
-RUN apt -y install /tmp/Nessus-10.8.2-ubuntu1804_aarch64.deb
+  --url 'https://www.tenable.com/downloads/api/v2/pages/nessus/files/Nessus-10.8.3-ubuntu1804_aarch64.deb' \
+  --output 'Nessus-10.8.3-ubuntu1804_aarch64.deb'
+RUN apt -y install /tmp/Nessus-10.8.3-ubuntu1804_aarch64.deb
 RUN echo "alias nessus=\"/etc/init.d/nessusd start\"" >> ~/.bashrc
 
 
@@ -79,9 +79,8 @@ RUN cd /tmp && wget http://www.inet.no/dante/files/dante-1.4.3.tar.gz && tar -xv
 RUN cd dante-1.4.3 && ./configure --build=aarch64-unknown-linux-gnu && make && make install
 COPY configs/sockd.conf /etc/sockd.conf
 
-RUN git clone --depth 1 https://github.com/junegunn/fzf.git /usr/share/fzf && . /usr/share/fzf/install
 
-RUN wget https://raw.githubusercontent.com/lincheney/fzf-tab-completion/master/bash/fzf-bash-completion.sh -O /usr/share/fzf/fzf-bash-completion.sh
+RUN wget https://raw.githubusercontent.com/lincheney/fzf-tab-completion/master/bash/fzf-bash-completion.sh -O /usr/local/etc/fzf-bash-completion.sh
 RUN wget https://github.com/kovidgoyal/kitty/releases/download/v0.35.2/kitten-linux-arm64 -O /usr/bin/kitten && chmod +x /usr/bin/kitten
 RUN wget https://raw.github.com/xwmx/nb/master/nb -O /usr/local/bin/nb && chmod +x /usr/local/bin/nb && nb completions install
 
@@ -92,7 +91,11 @@ COPY configs/.gitconfig /root/.gitconfig
 
 RUN ln -s /usr/bin/batcat /usr/local/bin/bat
 COPY configs/bat.cfg /root/.config/bat/config
-RUN echo "printf '\eP\$f{\"hook\": \"SourcedRcFileForWarp\", \"value\": { \"shell\": \"bash\" }}\x9c'" >> /root/.bashrc
+#RUN echo "printf '\eP\$f{\"hook\": \"SourcedRcFileForWarp\", \"value\": { \"shell\": \"bash\" }}\x9c'" >> /root/.bashrc
+COPY configs/id_ed25519 /root/.ssh/id_ed25519
+COPY configs/known_hosts /root/.ssh/known_hosts
+RUN chmod 600 /root/.ssh/id_ed25519 &&  eval "$(ssh-agent -s)" && ssh-add /root/.ssh/id_ed25519
+RUN printf "[safe]\n        directory = /root/.nb/notes" >> ~/.gitconfig
 
 RUN rm -r /tmp/*
 
@@ -103,9 +106,9 @@ RUN echo "export HISTFILESIZE=100000" >> ~/.bashrc
 RUN echo "export HISTCONTROL=ignoredups" >> ~/.bashrc
 RUN echo "export EDITOR=vim" >> ~/.bashrc
 RUN echo "shopt -s histverify" >> ~/.bashrc
-RUN echo "source /usr/share/fzf/fzf-bash-completion.sh && bind -x '"'"\t"'": fzf_bash_completion'" >> ~/.bashrc
+RUN echo "source /usr/local/etc/fzf-bash-completion.sh && bind -x '"'"\t"'": fzf_bash_completion'" >> ~/.bashrc
 RUN echo 'alias "xcopy=xclip -selection clipboard"' >> ~/.bashrc
-RUN echo 'alias "xpaste=xclip -o -selection clipboard"' >> ~/.bashrc
+RUN echo 'alias "xpaste=xclip -o -selection clipboard > /dev/null && xclip -o -selection clipboard"' >> ~/.bashrc
 RUN echo "alias urlencode=\"jq -sRr @uri\"" >> ~/.bashrc
 RUN echo 'eval "$(fzf --bash)"' >> ~/.bashrc
 ENV TERM=xterm-256color

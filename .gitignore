@@ -1,1 +1,4 @@
 configs/subfinder_provider_config.yaml
+id_ed25519
+known_hosts
+.DS_Store
